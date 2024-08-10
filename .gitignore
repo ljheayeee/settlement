@@ -5,7 +5,9 @@
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
 # Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
 
+### application.properties ###
 application-aws.properties
+application-docker.properties
 
 # User-specific stuff
 .idea/**/workspace.xml
@@ -226,5 +228,9 @@ gradle-app.setting
 ### Gradle Patch ###
 # Java heap dump
 *.hprof
+
+### docker-compose ###
+.dockerignore
+docker-compose.yaml
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij,intellij+all,gradle,java
