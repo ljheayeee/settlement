@@ -1,6 +1,6 @@
 version: '3.8'
 services:
-  settlement_project:  # 서비스 이름 변경
+  settlement_project:  # 서비스 이름 변경 제발 되라
     build:
       context: .
       dockerfile: Dockerfile  # 기존 Dockerfile 이름
