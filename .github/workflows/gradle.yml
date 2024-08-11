@@ -6,8 +6,8 @@ on:
   pull_request:  # 'pull_request' 이벤트가 발생할 때
     branches: [ "master" ]  # 'master' 브랜치에 대한 풀 리퀘스트 이벤트
 
-permissions:
-  contents: write
+#permissions:
+#  contents: write
 
 jobs:
   build:  # 빌드 작업 정의
