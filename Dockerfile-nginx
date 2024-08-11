@@ -3,3 +3,5 @@ FROM nginx
 
 # 로컬의 nginx.conf 파일을 컨테이너의 /etc/nginx/conf.d/로 복사합니다.
 COPY ./nginx/conf.d/nginx.conf /etc/nginx/conf.d/default.conf
+
+

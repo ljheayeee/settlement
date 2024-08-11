@@ -9,3 +9,5 @@ COPY build/libs/*.jar app.jar
 
 # 4. 도커 컨테이너 내에서 실행될 명령어를 정의
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+
+
