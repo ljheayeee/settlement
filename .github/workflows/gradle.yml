@@ -65,5 +65,5 @@ jobs:
             docker-compose up -d  # Docker Compose를 사용하여 서비스 실행
             docker image prune -f  # 사용하지 않는 Docker 이미지를 정리
 
-      - name: Generate and submit dependency graph  # 의존성 그래프 생성 및 제출 단계
-        uses: gradle/actions/dependency-submission@dbbdc275be76ac10734476cc723d82dfe7ec6eda  # 의존성 제출 액션 사용
+#      - name: Generate and submit dependency graph  # 의존성 그래프 생성 및 제출 단계
+#        uses: gradle/actions/dependency-submission@dbbdc275be76ac10734476cc723d82dfe7ec6eda  # 의존성 제출 액션 사용
