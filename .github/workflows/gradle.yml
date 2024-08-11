@@ -50,7 +50,7 @@ jobs:
           docker push ljheayeee/settlement_project:latest  # 빌드한 이미지를 Docker Hub에 푸시
 
       - name: executing remote ssh commands using password  # 원격 SSH 명령 실행 단계
-        uses: appleboy/ssh-action@0.1.0  # 안정적인 SSH 액션 사용
+        uses: appleboy/ssh-action  # 안정적인 SSH 액션 사용
         with:  # 액션에 전달할 매개변수
           host: ${{ secrets.HOST }}  # SSH 접속할 호스트
           username: ubuntu  # SSH 접속할 사용자 이름
