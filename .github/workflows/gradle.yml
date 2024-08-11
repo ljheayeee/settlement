@@ -96,7 +96,6 @@ jobs:
           sudo docker rm -f $(docker ps -qa)
           sudo docker pull ljheayeee/settlement
           sudo docker pull ljheayeee/settlement_project
-          sudo docker pull ljheayeee/postgres:15-alpine
           docker-compose up -d
           docker image prune -f
 
