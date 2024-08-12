@@ -31,7 +31,8 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
 	implementation 'org.springframework.boot:spring-boot-starter'
-	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+//	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
 	// json
 	implementation 'org.json:json:20230227'
 	// JWT
@@ -50,3 +51,6 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+//tasks.withType(JavaCompile) {
+//	options.compilerArgs << '-parameters'
+//}
