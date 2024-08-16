@@ -47,6 +47,7 @@ public class UserService {
             role = UserRoleEnum.SELLER;
         }
 
+        // 사용자 등록 (빌더 패턴 사용)
         // 사용자 등록
         User user = new User(username, password, email, role);
         userRepository.save(user);

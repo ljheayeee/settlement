@@ -1,18 +1,18 @@
 version: '3.8'
 services:
-  settlement_project:  # 서비스 이름 변경 제발 되라
-    build:
-      context: .
-      dockerfile: Dockerfile  # 기존 Dockerfile 이름
-    depends_on:
-      - db  # db 서비스에 의존
-    image: ljheayeee/settlement_project
-    ports:
-      - "8080:8080"  # 애플리케이션의 포트를 8080으로 변경
-    volumes:
-      - ./src:/app/src  # 로컬 코드 변경 사항을 즉시 반영하기 위해 볼륨 추가
-      - ./build:/app/build  # Gradle 빌드 결과를 연결
-      - ./gradle:/home/gradle/.gradle  # Gradle 캐시를 로컬에 저장 (선택 사항)
+#  settlement_project:  # 서비스 이름 변경
+#    build:
+#      context: .
+#      dockerfile: Dockerfile  # 기존 Dockerfile 이름
+#    depends_on:
+#      - db  # db 서비스에 의존
+#    image: ljheayeee/settlement_project
+#    ports:
+#      - "8080:8080"  # 애플리케이션의 포트를 8080으로 변경
+#    volumes:
+#      - ./src:/app/src  # 로컬 코드 변경 사항을 즉시 반영하기 위해 볼륨 추가
+#      - ./build:/app/build  # Gradle 빌드 결과를 연결
+#      - ./gradle:/home/gradle/.gradle  # Gradle 캐시를 로컬에 저장 (선택 사항)
 
   nginx:
     container_name: nginx
@@ -22,8 +22,8 @@ services:
     image: ljheayeee/settlement  # 푸시할 이미지 이름
     ports:
       - 80:80
-    depends_on:
-      - settlement_project  # settlement_project 서비스에 의존
+#    depends_on:
+#      - settlement_project  # settlement_project 서비스에 의존
     volumes:
       - ./nginx/conf.d/nginx.conf:/etc/nginx/conf.d/default.conf
 
@@ -40,3 +40,19 @@ services:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 5s
       retries: 10
+
+  redis:
+    image: redis:6-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./config/redis.conf:/usr/local/etc/redis/redis.conf
+      - redis_data:/data
+    command: [ "sh", "-c", "exec redis-server /usr/local/etc/redis/redis.conf --requirepass \"$REDIS_PASSWORD\"" ]
+    environment:
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+    env_file:
+      - .env
+
+volumes:
+  redis_data:
