@@ -1,6 +1,5 @@
 package com.settlement.video.service;
 
-import com.settlement.video.config.AdBatchConfig;
 import com.settlement.video.dto.VideoRequestDto;
 import com.settlement.video.dto.VideoResponseDto;
 import com.settlement.video.entity.Ad;
@@ -12,16 +11,14 @@ import com.settlement.video.repository.StatsRepository;
 import com.settlement.video.repository.UserRepository;
 import com.settlement.video.repository.VideoRepository;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.persistence.Table;
-import org.springframework.transaction.annotation.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -32,7 +29,7 @@ public class VideoService {
     private final UserRepository userRepository;
     private final AdRepository adRepository;
     private final StatsRepository statsRepository;
-    private static final int BATCH_SIZE = 1000;
+    private static final int BATCH_SIZE = 500;
 
     public VideoService(VideoRepository videoRepository, UserRepository userRepository,
                         AdRepository adRepository, StatsRepository statsRepository) {
@@ -76,11 +73,15 @@ public class VideoService {
     }
 
 
-    //
+
+
+
+
+    /* create video 관련 메소드  start  */
     private void assignAdsToVideo(Video video) {
         int videoLengthMinutes = video.getPlayTimeInMinutes();
         if (videoLengthMinutes <= AD_INTERVAL_MINUTES) {
-            log.info("비디오가 광고 삽입하기에 너무 짧습니다. 길이: {}분", videoLengthMinutes);
+            log.info("비디오가 광고 삽입하기에 너무 짧습니다. 비디오 ID: {}, 길이: {}분", video.getId(), videoLengthMinutes);
             return;
         }
 
@@ -88,90 +89,66 @@ public class VideoService {
         log.info("비디오 ID: {}에 {}개의 광고를 할당합니다", video.getId(), numberOfAdsNeeded);
 
         List<Ad> selectedAds = selectAds(numberOfAdsNeeded);
+        List<Stats> statsToSave = new ArrayList<>();
+
         for (Ad ad : selectedAds) {
-            createStats(video, ad);
+            Stats stats = Stats.builder()
+                    .video(video)
+                    .ad(ad)
+                    .statsAdView(0)
+                    .build();
+            statsToSave.add(stats);
             ad.markAsUsed();
-            adRepository.save(ad);
+        }
+
+        // Batch save selected ads
+        saveBatch(selectedAds, adRepository::saveAll);
+
+        // Batch save stats
+        saveBatch(statsToSave, statsRepository::saveAll);
+    }
+
+    private <T> void saveBatch(List<T> items, java.util.function.Consumer<List<T>> saveFunction) {
+        for (int i = 0; i < items.size(); i += BATCH_SIZE) {
+            List<T> batch = items.subList(i, Math.min(items.size(), i + BATCH_SIZE));
+            saveFunction.accept(batch);
         }
     }
 
     private List<Ad> selectAds(int count) {
-        List<Ad> unusedAds = adRepository.findByIsUsedFalse();
-        List<Ad> allAds = adRepository.findAll();
-
-        if (allAds.isEmpty()) {
-            log.warn("시스템에 등록된 광고가 없습니다.");
-            return Collections.emptyList();
-        }
-
         List<Ad> selectedAds = new ArrayList<>();
-        for (int i = 0; i < count; i++) {
-            if (unusedAds.isEmpty()) {
-                // 모든 광고가 사용되었다면 리셋
-                allAds.forEach(Ad::resetUsage);
-                adRepository.saveAll(allAds);
-                unusedAds = new ArrayList<>(allAds);
+
+        while (selectedAds.size() < count) {
+            int remainingCount = count - selectedAds.size();
+            int batchSize = Math.min(remainingCount, BATCH_SIZE);
+
+            List<Ad> batchAds = adRepository.findRandomUnusedAds(batchSize);
+
+            if (batchAds.isEmpty()) {
+                resetAdsInBatches(BATCH_SIZE);
+                continue;
             }
 
-            Ad selectedAd = unusedAds.remove(0);
-            selectedAds.add(selectedAd);
+            for (Ad ad : batchAds) {
+                ad.markAsUsed();
+                selectedAds.add(ad);
+                if (selectedAds.size() == count) break;
+            }
         }
 
         return selectedAds;
     }
 
-    private void createStats(Video video, Ad ad) {
-        Stats stats = Stats.builder()
-                .video(video)
-                .ad(ad)
-                .statsAdView(0)
-                .build();
-        statsRepository.save(stats);
-        log.info("통계 생성 완료: 비디오 ID: {}, 광고 ID: {}", video.getId(), ad.getId());
+    private int resetAdsInBatches(int batchSize) {
+        int totalReset = 0;
+        int resetInBatch;
+        do {
+            resetInBatch = adRepository.resetUsedAdsInBatch(batchSize);
+            totalReset += resetInBatch;
+        } while (resetInBatch > 0);
+        return totalReset;
     }
-
-//    @Transactional
-//    public List<Ad> selectAdsOptimized(int count) {
-//        long totalAdCount = adRepository.count();
-//        if (totalAdCount == 0) {
-//            log.warn("시스템에 등록된 광고가 없습니다.");
-//            return Collections.emptyList();
-//        }
-//
-//        List<Ad> selectedAds = new ArrayList<>();
-//        Set<Long> selectedIds = new HashSet<>();
-//
-//        while (selectedAds.size() < count) {
-//            int remainingCount = count - selectedAds.size();
-//            int batchSize = Math.min(remainingCount, BATCH_SIZE);
-//
-//            List<Ad> batchAds = adRepository.findRandomUnusedAds(batchSize);
-//
-//            if (batchAds.isEmpty()) {
-//                resetAllAdsUsage();
-//                continue;
-//            }
-//
-//            for (Ad ad : batchAds) {
-//                if (selectedIds.add(ad.getId())) {
-//                    ad.markAsUsed();
-//                    selectedAds.add(ad);
-//                }
-//                if (selectedAds.size() == count) break;
-//            }
-//        }
-//
-//        adRepository.saveAll(selectedAds);
-//        return selectedAds;
-//    }
-//
-//    @Transactional
-//    public void resetAllAdsUsage() {
-//        int updatedRows = 0;
-//        do {
-//            updatedRows = adRepository.resetUsedAdsInBatch(BATCH_SIZE);
-//        } while (updatedRows > 0);
-//    }
+    /* create video 관련 메소드  end  */
 }
 
 
