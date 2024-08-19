@@ -137,7 +137,7 @@ class WatchHistoryServiceTest {
 
         // Assert
         verify(valueOperations).set("watch:1:1", "300", 48, TimeUnit.HOURS);
-        verify(videoService).checkAndPlayAd(1L, 1L, 300);
+        verify(videoService).checkAndPlayAd(1L, 300);  // userId 제거됨
     }
 
     @Test

@@ -83,7 +83,7 @@ public class WatchHistoryService {
         redisTemplate.opsForValue().set(key, String.valueOf(watchHistoryTime), 48, TimeUnit.HOURS);
         log.debug("Updated watch history time in Redis for user: {} and video: {} to time: {}", userId, videoId, watchHistoryTime);
 
-        videoService.checkAndPlayAd(userId, videoId, watchHistoryTime);
+        videoService.checkAndPlayAd(videoId, watchHistoryTime);  // userId 제거됨
     }
 
 

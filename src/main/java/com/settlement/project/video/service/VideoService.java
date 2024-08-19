@@ -1,30 +1,25 @@
 package com.settlement.project.video.service;
 
-import com.settlement.project.ads.entity.Ad;
 import com.settlement.project.ads.service.AdService;
-import com.settlement.project.video.dto.StreamingResponseDto;
-import com.settlement.project.video.dto.VideoRequestDto;
-import com.settlement.project.video.dto.VideoResponseDto;
-import com.settlement.project.stats.entity.Stats;
-import com.settlement.project.video.entity.Video;
-import com.settlement.project.video.entity.VideoStatusEnum;
-import com.settlement.project.video.exception.VideoCreationException;
-import com.settlement.project.video.repository.VideoRepository;
 import com.settlement.project.stats.service.StatsService;
 import com.settlement.project.user.entity.User;
 import com.settlement.project.user.service.UserService;
+import com.settlement.project.video.dto.VideoRequestDto;
+import com.settlement.project.video.dto.VideoResponseDto;
+import com.settlement.project.video.entity.Video;
+import com.settlement.project.video.entity.VideoStatusEnum;
+import com.settlement.project.video.exception.AdPlaybackException;
+import com.settlement.project.video.exception.VideoCreationException;
+import com.settlement.project.video.repository.VideoRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.ErrorResponse;
-import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.util.List;
 
@@ -68,7 +63,9 @@ public class VideoService {
         return VideoResponseDto.fromEntity(video);
     }
 
+    @Cacheable(value = "activeVideos", key = "#keyword + '_' + #pageable.pageNumber")
     public Page<VideoResponseDto> getAllActiveVideos(String keyword, Pageable pageable) {
+        log.debug("Fetching active videos with keyword: {}, page: {}", keyword, pageable.getPageNumber());
         Page<Video> videoPage;
         if (keyword != null && !keyword.trim().isEmpty()) {
             videoPage = videoRepository.findByStatusAndTitleContainingIgnoreCase(
@@ -111,14 +108,19 @@ public class VideoService {
 
 
     @Transactional
-    public void checkAndPlayAd(Long userId, Long videoId, int watchHistoryTime) {
-        Video video = getVideoById(videoId);
-        int adIndex = watchHistoryTime / AD_INTERVAL_SECONDS;
-        List<Long> adIds = statsService.getAdIdsForVideo(videoId);
+    public void checkAndPlayAd(Long videoId, int watchHistoryTime) {
+        try {
+            int adIndex = watchHistoryTime / AD_INTERVAL_SECONDS;
+            List<Long> adIds = statsService.getAdIdsForVideo(videoId);
 
-        if (watchHistoryTime % AD_INTERVAL_SECONDS == 0 && adIndex > 0 && adIndex <= adIds.size()) {
-            Long adId = adIds.get(adIndex - 1);
-            statsService.incrementAdViewCount(videoId, adId);
+            if (watchHistoryTime % AD_INTERVAL_SECONDS == 0 && adIndex > 0 && adIndex <= adIds.size()) {
+                Long adId = adIds.get(adIndex - 1);
+                statsService.incrementAdViewCount(videoId, adId);
+                log.info("Ad played for video: {}, ad: {}", videoId, adId);
+            }
+        } catch (Exception e) {
+            log.error("Error checking and playing ad for video: {}", videoId, e);
+            throw new AdPlaybackException("Failed to check and play ad", e);
         }
     }
 
