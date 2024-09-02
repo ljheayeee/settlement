@@ -11,6 +11,7 @@ import java.util.Collection;
 
 public class UserDetailsImpl implements UserDetails {
     private final User user;
+    private Long kakaoId; // 카카오 사용자를 위한 필드 추가
 
     public UserDetailsImpl(User user) {
         this.user = user;
@@ -22,6 +23,14 @@ public class UserDetailsImpl implements UserDetails {
 
     public Long getUserId() {
         return user.getId();
+    }
+    public UserRoleEnum getRole() {
+        return user.getRole();
+    }
+
+    // 판매자 여부를 확인하는 편의 메서드 추가
+    public boolean isSeller() {
+        return UserRoleEnum.SELLER.equals(user.getRole());
     }
 
     @Override
@@ -64,5 +73,13 @@ public class UserDetailsImpl implements UserDetails {
     @Override
     public boolean isEnabled() {
         return true;
+    }
+
+    public UserDetailsImpl(User user, Long kakaoId) {
+        this.user = user;
+        this.kakaoId = kakaoId;
+    }
+    public Long getKakaoId() {
+        return kakaoId;
     }
 }

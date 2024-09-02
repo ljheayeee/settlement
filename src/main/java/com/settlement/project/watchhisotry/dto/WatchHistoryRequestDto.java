@@ -9,13 +9,11 @@ import lombok.Getter;
 @Getter
 @Builder
 public class WatchHistoryRequestDto {
-    private Long userId;
     private Long videoId;
     private Integer watchHistoryTime;
 
-    public WatchHistory toEntity(User user, Video video) {
+    public WatchHistory toEntity(Video video) {
         return WatchHistory.builder()
-                .user(user)
                 .video(video)
                 .watchHistoryTime(watchHistoryTime)
                 .build();

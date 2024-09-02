@@ -13,6 +13,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -21,6 +25,7 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.UUID;
 
 @Slf4j(topic = "KAKAO Login")
@@ -42,9 +47,13 @@ public class KakaoService {
 
         // 3. 필요시에 회원가입
         User kakaoUser = registerKakaoUserIfNeeded(kakaoUserInfo);
-        log.info("registerKakaoUserIfNeede");
+
         // 4. JWT 토큰 반환
-        String createToken =  jwtUtil.createToken(kakaoUser.getUsername(), kakaoUser.getRole());
+        String createToken = jwtUtil.createToken(kakaoUser.getUsername(), kakaoUser.getRole());
+        
+        UserDetails userDetails = new UserDetailsImpl(kakaoUser);
+        Authentication authentication = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(authentication);
 
         return createToken;
     }

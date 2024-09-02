@@ -1,7 +1,10 @@
 package com.settlement.project.watchhisotry.service;
 
+import com.settlement.project.videoadstats.dto.PlayAdResponseDto;
+import com.settlement.project.ads.service.AdService;
 import com.settlement.project.user.entity.User;
 import com.settlement.project.video.entity.Video;
+import com.settlement.project.videoadstats.service.VideoAdStatsService;
 import com.settlement.project.watchhisotry.entity.WatchHistory;
 import com.settlement.project.watchhisotry.repository.WatchHistoryRepository;
 import com.settlement.project.user.service.UserService;
@@ -14,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -26,21 +31,25 @@ public class WatchHistoryService {
     private final UserService userService;
     private final VideoService videoService;
     private final RedisTemplate<String, String> redisTemplate;
+    private final VideoAdStatsService videoAdStatsService;
+    private final AdService adService;
 
     public WatchHistoryService(WatchHistoryRepository watchHistoryRepository,
                                UserService userService,
                                VideoService videoService,
-                               RedisTemplate<String, String> redisTemplate) {
+                               RedisTemplate<String, String> redisTemplate, VideoAdStatsService videoAdStatsService, AdService adService) {
         this.watchHistoryRepository = watchHistoryRepository;
         this.userService = userService;
         this.videoService = videoService;
         this.redisTemplate = redisTemplate;
+        this.videoAdStatsService = videoAdStatsService;
+        this.adService = adService;
     }
 
 
 
     @Transactional
-    public int startWatching(Long userId, Long videoId) {
+    public int startWatching(Long videoId,Long userId) {
         log.info("Starting watch session for user: {} and video: {}", userId, videoId);
         User user = userService.findUserById(userId);
         Video video = videoService.getVideoById(videoId);
@@ -69,6 +78,9 @@ public class WatchHistoryService {
                 watchHistoryRepository.save(watchHistory);
                 log.info("Created new watch history record for user: {} and video: {}", userId, videoId);
             }
+
+            // 조회수 증가
+            videoService.incrementViewCount(videoId);
         }
 
         redisTemplate.opsForValue().set(key, String.valueOf(startWatchHistoryTime), 48, TimeUnit.HOURS);
@@ -78,12 +90,14 @@ public class WatchHistoryService {
     }
 
     @Transactional
-    public void updateWatchHistoryTime(Long userId, Long videoId, int watchHistoryTime) {
+    public PlayAdResponseDto updateWatchHistoryTime(Long userId, Long videoId, int watchHistoryTime) {
         String key = String.format("watch:%d:%d", userId, videoId);
         redisTemplate.opsForValue().set(key, String.valueOf(watchHistoryTime), 48, TimeUnit.HOURS);
         log.debug("Updated watch history time in Redis for user: {} and video: {} to time: {}", userId, videoId, watchHistoryTime);
 
-        videoService.checkAndPlayAd(videoId, watchHistoryTime);  // userId 제거됨
+        // VideoAdStatsService를 통해 광고 재생 정보 확인 및 처리
+        PlayAdResponseDto adResponse = videoAdStatsService.checkAndPlayAd(videoId, watchHistoryTime);
+        return adResponse;  // 광고가 재생된 경우 광고 정보를 반환, 없으면 null 반환
     }
 
 
@@ -121,7 +135,7 @@ public class WatchHistoryService {
         log.info("Watch session ended for user: {} and video: {}", userId, videoId);
     }
 
-    @Scheduled(cron = "0 0 0 * * ?") // 매일 자정에 실행
+    @Scheduled(cron = "0 0 * * * *") // 매 시간 실행
     @Transactional
     public void syncRedisToDatabase() {
         log.info("Starting daily watch history sync from Redis to Database");
@@ -168,5 +182,29 @@ public class WatchHistoryService {
     }
 
 
+
+
+
+    @Transactional(readOnly = true)
+    public int countViewsByVideoAndDate(Long videoId, LocalDate date) {
+        return watchHistoryRepository.countViewsByVideoAndDate(videoId, date);
+    }
+
+    @Transactional(readOnly = true)
+    public long sumWatchTimeByVideoAndDate(Long videoId, LocalDate date) {
+        return watchHistoryRepository.sumWatchTimeByVideoAndDate(videoId, date);
+    }
+
+
+
+    @Transactional(readOnly = true)
+    public List<Long> findActiveVideoIdsByDate(LocalDate date) {
+        return watchHistoryRepository.findActiveVideoIdsByDate(date);
+    }
+
+    @Transactional
+    public WatchHistory save(WatchHistory watchHistory) {
+        return watchHistoryRepository.save(watchHistory);
+    }
 }
 

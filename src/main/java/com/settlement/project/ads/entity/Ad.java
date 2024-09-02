@@ -49,14 +49,11 @@ public class Ad extends Timestamped {
         updateStatus(LocalDate.now());
     }
 
-    public void changeStatus(AdStatusEnum status) {
-        this.status = status;
-    }
     public void updateStatus(LocalDate currentDate) {
         if (currentDate.isAfter(this.endDate)) {
             this.status = AdStatusEnum.EXPIRED;
         } else if (currentDate.isBefore(this.startDate)) {
-            this.status = AdStatusEnum.INACTIVE;
+            this.status = AdStatusEnum.SCHEDULED;
         } else {
             this.status = AdStatusEnum.ACTIVE;
         }
@@ -70,11 +67,15 @@ public class Ad extends Timestamped {
         this.isUsed = true;
     }
 
-    public void resetUsage() {
-        this.isUsed = false;
+
+    public void softDelete() {
+        this.status = AdStatusEnum.EXPIRED;  // or a new status like DELETED
     }
 
-    public String getUrl() {
-        return this.adUrl;
+    public void update(String adUrl, LocalDate startDate, LocalDate endDate, int adPlaytime) {
+        this.adUrl = adUrl;
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.adPlaytime = adPlaytime;
     }
 }

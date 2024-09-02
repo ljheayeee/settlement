@@ -1,14 +1,14 @@
 package com.settlement.project.video.controller;
 
-import com.settlement.project.video.dto.StreamingResponseDto;
+import com.settlement.project.user.entity.UserRoleEnum;
 import com.settlement.project.video.dto.VideoRequestDto;
 import com.settlement.project.video.dto.VideoResponseDto;
 import com.settlement.project.video.dto.VideoStatusRequestDto;
-import com.settlement.project.ads.entity.Ad;
-import com.settlement.project.video.entity.Video;
-import com.settlement.project.stats.service.StatsService;
+import com.settlement.project.videoadstats.service.VideoAdStatsService;
 import com.settlement.project.user.service.UserDetailsImpl;
 import com.settlement.project.video.service.VideoService;
+import com.settlement.project.videostats.repository.VideoStatsRepository;
+import com.settlement.project.videostats.service.VideoStatsService;
 import com.settlement.project.watchhisotry.service.WatchHistoryService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -16,10 +16,9 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 
 @RestController
@@ -27,14 +26,9 @@ import java.util.List;
 @RequestMapping("/api/v1/videos")
 public class VideoController {
     private final VideoService videoService;
-    private final StatsService statsService;
 
-    private final WatchHistoryService watchHistoryService;
-
-    public VideoController(VideoService videoService, StatsService statsService, WatchHistoryService watchHistoryService) {
+    public VideoController(VideoService videoService, VideoStatsService videoStatsService) {
         this.videoService = videoService;
-        this.statsService = statsService;
-        this.watchHistoryService = watchHistoryService;
     }
     @GetMapping
     public ResponseEntity<Page<VideoResponseDto>> getAllActiveVideos(
@@ -46,15 +40,28 @@ public class VideoController {
 
     /** 동영상 등록**/
     @PostMapping("/upload")
-    public ResponseEntity<VideoResponseDto> createVideo(@RequestBody VideoRequestDto requestDto) {
-        VideoResponseDto responseDto = videoService.createVideo(requestDto);
+    public ResponseEntity<VideoResponseDto> createVideo(@RequestBody VideoRequestDto requestDto,
+                                                        @AuthenticationPrincipal UserDetailsImpl userDetails) {
+        if (userDetails.getUser().getRole() != UserRoleEnum.SELLER) {
+            throw new AccessDeniedException("Only sellers can upload videos");
+        }
+
+        Long userId = userDetails.getUserId();
+
+        VideoRequestDto updatedRequestDto = requestDto.toBuilder()
+                .userId(userId)
+                .build();
+
+        VideoResponseDto responseDto = videoService.createVideo(updatedRequestDto);
+
         return ResponseEntity.ok(responseDto);
     }
 
     /** 비디오 가져오기 **/
     @GetMapping("/{id}")
-    public ResponseEntity<Video> getVideoById(@PathVariable Long id) {
-        return ResponseEntity.ok(videoService.getVideoById(id));
+    public ResponseEntity<VideoResponseDto> getVideoById(@PathVariable Long id) {
+        VideoResponseDto videoDto = VideoResponseDto.fromEntity(videoService.getVideoById(id));
+        return ResponseEntity.ok(videoDto);
     }
     /** 비디오 수정 **/
     @PutMapping("/{id}")
@@ -65,35 +72,7 @@ public class VideoController {
         VideoResponseDto updatedVideo = videoService.updateVideo(id, requestDto, userId);
         return ResponseEntity.ok(updatedVideo);
     }
-    /** 비디오 시작 **/
-    @PostMapping("/{id}/play")
-    public ResponseEntity<Void> startPlaying(@PathVariable Long id, @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        watchHistoryService.startWatching(userDetails.getUserId(), id);
-        return ResponseEntity.ok().build();
-    }
-    /** 비디오 시작 **/
-    @PutMapping("/{id}/watchHistoryTime")
-    public ResponseEntity<Void> updateWatchHistoryTime(@PathVariable Long id,
-                                                       @RequestParam int watchHistoryTime,
-                                                       @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        watchHistoryService.updateWatchHistoryTime(userDetails.getUserId(), id, watchHistoryTime);
-        return ResponseEntity.ok().build();
-    }
-    @PostMapping("/{id}/pause")
-    public ResponseEntity<Void> pausePlaying(@PathVariable Long id,
-                                             @AuthenticationPrincipal UserDetailsImpl userDetails) {
-        watchHistoryService.pauseWatching(userDetails.getUserId(), id);
-        return ResponseEntity.ok().build();
-    }
 
-
-//    @GetMapping("/{id}/ads")
-//    public ResponseEntity<List<Ad>> getAdsForVideo(@PathVariable Long id,
-//                                                   VideoRequestDto requestDto,
-//                                                   @AuthenticationPrincipal UserDetailsImpl userDetails) {
-//        List<Ad> ads = statsService.getAdsForVideo(id, userDetails.getUserId());
-//        return ResponseEntity.ok(ads);
-//    }
 
     @PutMapping("/{id}/status")
     public ResponseEntity<VideoResponseDto> updateVideoStatus(

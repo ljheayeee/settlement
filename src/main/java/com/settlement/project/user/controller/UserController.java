@@ -3,6 +3,7 @@ package com.settlement.project.user.controller;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.settlement.project.user.dto.SignupRequestDto;
 import com.settlement.project.user.dto.UserInfoDto;
+import com.settlement.project.user.entity.User;
 import com.settlement.project.user.entity.UserRoleEnum;
 import com.settlement.project.jwt.JwtUtil;
 import com.settlement.project.user.service.KakaoService;
@@ -13,7 +14,11 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
@@ -40,7 +45,7 @@ public class UserController {
     }
 
     @PostMapping("/user/signup")
-    public String signup(@Valid SignupRequestDto requestDto, BindingResult bindingResult) {
+    public String signup(@ModelAttribute @Valid SignupRequestDto requestDto, BindingResult bindingResult) {
         // Validation 예외처리
         List<FieldError> fieldErrors = bindingResult.getFieldErrors();
         if(fieldErrors.size() > 0) {
@@ -60,6 +65,7 @@ public class UserController {
     @ResponseBody
     public UserInfoDto getUserInfo(@AuthenticationPrincipal UserDetailsImpl userDetails) {
         log.info("유저인포 체크");
+        log.info(String.valueOf(userDetails));
         String username = userDetails.getUser().getUsername();
         UserRoleEnum role = userDetails.getUser().getRole();
         boolean isSeller = (role == UserRoleEnum.SELLER);
@@ -72,11 +78,12 @@ public class UserController {
         log.info("카카오 로그인 컨트롤러");
         // code: 카카오 서버로부터 받은 인가 코드 Service 전달 후 인증 처리 및 JWT 반환
         String token = kakaoService.kakaoLogin(code);
-
         // Cookie 생성 및 직접 브라우저에 Set
+//        Cookie cookie = new Cookie(JwtUtil.AUTHORIZATION_HEADER, token);
         Cookie cookie = new Cookie(JwtUtil.AUTHORIZATION_HEADER, token.substring(7));
         cookie.setPath("/");
         response.addCookie(cookie);
+
 
         return "redirect:/";
     }

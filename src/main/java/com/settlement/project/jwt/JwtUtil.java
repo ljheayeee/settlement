@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
+import java.io.UnsupportedEncodingException;
 import java.security.Key;
 import java.util.Base64;
 import java.util.Date;
@@ -51,18 +52,24 @@ public class JwtUtil {
                         .compact();
     }
 
+
     // header 에서 JWT 가져오기
     public String getJwtFromHeader(HttpServletRequest request) {
         String bearerToken = request.getHeader(AUTHORIZATION_HEADER);
         if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER_PREFIX)) {
             return bearerToken.substring(7);
         }
+
         return null;
     }
 
     // 토큰 검증
     public boolean validateToken(String token) {
+
         try {
+            if (token.startsWith("Bearer ")) {
+                token = token.substring(7);
+            }
             Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
             return true;
         } catch (SecurityException | MalformedJwtException | SignatureException e) {

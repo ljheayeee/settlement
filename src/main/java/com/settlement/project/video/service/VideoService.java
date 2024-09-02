@@ -1,16 +1,18 @@
 package com.settlement.project.video.service;
 
 import com.settlement.project.ads.service.AdService;
-import com.settlement.project.stats.service.StatsService;
+import com.settlement.project.videoadstats.service.VideoAdStatsService;
 import com.settlement.project.user.entity.User;
 import com.settlement.project.user.service.UserService;
 import com.settlement.project.video.dto.VideoRequestDto;
 import com.settlement.project.video.dto.VideoResponseDto;
 import com.settlement.project.video.entity.Video;
 import com.settlement.project.video.entity.VideoStatusEnum;
-import com.settlement.project.video.exception.AdPlaybackException;
 import com.settlement.project.video.exception.VideoCreationException;
 import com.settlement.project.video.repository.VideoRepository;
+import com.settlement.project.videostats.entity.VideoStats;
+import com.settlement.project.videostats.repository.VideoStatsRepository;
+import com.settlement.project.videostats.service.VideoStatsService;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +23,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -30,15 +33,15 @@ public class VideoService {
     private final VideoRepository videoRepository;
     private final UserService userService;
     private final AdService adService;
-    private final StatsService statsService;
     private static final int AD_INTERVAL_SECONDS = 300; // 5분
+    private static final int BATCH_SIZE = 1000; // 한 번에 처리할 비디오 ID 수
+
 
     public VideoService(VideoRepository videoRepository, UserService userService,
-                        AdService adService, StatsService statsService) {
+                        AdService adService) {
         this.videoRepository = videoRepository;
         this.userService = userService;
         this.adService = adService;
-        this.statsService = statsService;
     }
 
     //동영상 등록
@@ -48,6 +51,7 @@ public class VideoService {
             User user = userService.findUserById(requestDto.getUserId());
             Video video = videoRepository.save(requestDto.toEntity(user));
             adService.assignAdsToVideo(video.getId(), video.getPlayTimeInMinutes());
+
             log.info("New video created: {}", video.getId());
             return VideoResponseDto.fromEntity(video);
         } catch (Exception e) {
@@ -63,7 +67,7 @@ public class VideoService {
         return VideoResponseDto.fromEntity(video);
     }
 
-    @Cacheable(value = "activeVideos", key = "#keyword + '_' + #pageable.pageNumber")
+    @Cacheable(value = "activeVideos", key = "#keyword + '_' + #pageable.pageNumber + '_' + #pageable.pageSize")
     public Page<VideoResponseDto> getAllActiveVideos(String keyword, Pageable pageable) {
         log.debug("Fetching active videos with keyword: {}, page: {}", keyword, pageable.getPageNumber());
         Page<Video> videoPage;
@@ -107,24 +111,79 @@ public class VideoService {
     }
 
 
-    @Transactional
-    public void checkAndPlayAd(Long videoId, int watchHistoryTime) {
-        try {
-            int adIndex = watchHistoryTime / AD_INTERVAL_SECONDS;
-            List<Long> adIds = statsService.getAdIdsForVideo(videoId);
 
-            if (watchHistoryTime % AD_INTERVAL_SECONDS == 0 && adIndex > 0 && adIndex <= adIds.size()) {
-                Long adId = adIds.get(adIndex - 1);
-                statsService.incrementAdViewCount(videoId, adId);
-                log.info("Ad played for video: {}, ad: {}", videoId, adId);
-            }
-        } catch (Exception e) {
-            log.error("Error checking and playing ad for video: {}", videoId, e);
-            throw new AdPlaybackException("Failed to check and play ad", e);
-        }
+    @Transactional
+    public void incrementViewCount(Long videoId) {
+        Video video = getVideoById(videoId);
+        video.incrementViewCount();
+        videoRepository.save(video);
+        log.info("Incremented view count for video: {}", videoId);
     }
 
 
+
+
+    public List<Long> getAllVideoIds() {
+        long totalVideos = videoRepository.countAllVideos();
+        List<Long> allVideoIds = new ArrayList<>();
+
+        for (int offset = 0; offset < totalVideos; offset += BATCH_SIZE) {
+            allVideoIds.addAll(videoRepository.findVideoIdsPaginated(offset, BATCH_SIZE));
+        }
+
+        return allVideoIds;
+    }
+
+    public List<Video> getAllVideos() {
+        return videoRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Video> findById(Long id) {
+        return videoRepository.findById(id);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Video> findByStatus(VideoStatusEnum status, Pageable pageable) {
+        return videoRepository.findByStatus(status, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Video> findByStatusAndTitleContainingIgnoreCase(VideoStatusEnum status, String keyword, Pageable pageable) {
+        return videoRepository.findByStatusAndTitleContainingIgnoreCase(status, keyword, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> findAllVideoIds() {
+        return videoRepository.findAllVideoIds();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Long> findVideoIdsPaginated(int offset, int limit) {
+        return videoRepository.findVideoIdsPaginated(offset, limit);
+    }
+
+    @Transactional(readOnly = true)
+    public long countAllVideos() {
+        return videoRepository.countAllVideos();
+    }
+
+    @Transactional
+    public Video save(Video video) {
+        return videoRepository.save(video);
+    }
+
+    @Transactional
+    public void delete(Video video) {
+        videoRepository.delete(video);
+    }
+
+
+
+    public Map<Long, String> getVideoTitles(Set<Long> videoIds) {
+        List<Video> videos = videoRepository.findAllById(videoIds);
+        return videos.stream().collect(Collectors.toMap(Video::getId, Video::getTitle));
+    }
 
 
 }

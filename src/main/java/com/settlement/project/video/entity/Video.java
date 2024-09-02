@@ -76,4 +76,8 @@ public class Video extends Timestamped {
     public String getUrl() {
         return this.videoUrl;
     }
+
+    public void incrementViewCount() {
+        this.view++;
+    }
 }

@@ -1,5 +1,6 @@
-package com.settlement.project.stats.entity;
+package com.settlement.project.videoadstats.entity;
 
+import com.settlement.project.common.entity.Timestamped;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -9,8 +10,8 @@ import lombok.NoArgsConstructor;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "stats")
-public class Stats {
+@Table(name = "video_ad_stats")
+public class VideoAdStats extends Timestamped {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -23,7 +24,7 @@ public class Stats {
     private Long adId;
 
     @Column(name = "stats_ad_view")
-    private Integer statsAdView;
+    private Long statsAdView;
 
 
     public void incrementAdView() {
@@ -31,18 +32,24 @@ public class Stats {
     }
 
     @Builder
-    public Stats(Long videoId, Long adId, Integer statsAdView) {
+    public VideoAdStats(Long videoId, Long adId, Long statsAdView) {
         this.videoId = videoId;
         this.adId = adId;
         this.statsAdView = statsAdView;
     }
-    public static Stats createNewStats(Long videoId, Long adId) {
-        return Stats.builder()
+    public static VideoAdStats createNewStats(Long videoId, Long adId) {
+        return VideoAdStats.builder()
                 .videoId(videoId)
                 .adId(adId)
-                .statsAdView(0)
+                .statsAdView(0L)
                 .build();
     }
+    public void updateStatsAdView(Long statsAdView) {
+        this.statsAdView = statsAdView;
+    }
 
+    public Long getStatsAdView() {
+        return statsAdView != 0 ? statsAdView: 0;
+    }
 
 }

@@ -5,14 +5,18 @@ import com.settlement.project.user.dto.LoginRequestDto;
 import com.settlement.project.user.entity.UserRoleEnum;
 import com.settlement.project.jwt.JwtUtil;
 import com.settlement.project.user.service.UserDetailsImpl;
+import io.jsonwebtoken.Claims;
 import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 
@@ -56,5 +60,7 @@ public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilte
     protected void unsuccessfulAuthentication(HttpServletRequest request, HttpServletResponse response, AuthenticationException failed) {
         response.setStatus(401);
     }
+
+
 
 }
