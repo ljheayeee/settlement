@@ -23,33 +23,48 @@ public class VideoAdStats extends Timestamped {
     @Column(name = "ad_id")
     private Long adId;
 
-    @Column(name = "stats_ad_view")
-    private Long statsAdView;
+    @Column(name = "daily_ad_view")
+    private Long dailyAdView;
 
+    @Column(name = "total_ad_view")
+    private Long totalAdView;
 
-    public void incrementAdView() {
-        this.statsAdView++;
+    public void incrementDailyAdView() {
+        this.dailyAdView++;
     }
 
     @Builder
-    public VideoAdStats(Long videoId, Long adId, Long statsAdView) {
+    public VideoAdStats(Long videoId, Long adId, Long totalAdView, Long dailyAdView) {
         this.videoId = videoId;
         this.adId = adId;
-        this.statsAdView = statsAdView;
+        this.dailyAdView = dailyAdView;
+        this.totalAdView = totalAdView;
     }
+
     public static VideoAdStats createNewStats(Long videoId, Long adId) {
         return VideoAdStats.builder()
                 .videoId(videoId)
                 .adId(adId)
-                .statsAdView(0L)
+                .dailyAdView(0L)
+                .totalAdView(0L)
                 .build();
     }
-    public void updateStatsAdView(Long statsAdView) {
-        this.statsAdView = statsAdView;
+
+    public void updateTotalAndResetDaily() {
+        this.totalAdView += this.dailyAdView;
+        this.dailyAdView = 0L;
     }
 
-    public Long getStatsAdView() {
-        return statsAdView != 0 ? statsAdView: 0;
+    public Long getDailyAdView() {
+        return dailyAdView != null ? dailyAdView : 0L;
     }
 
+    public Long getTotalAdView() {
+        return totalAdView != null ? totalAdView : 0L;
+    }
+
+    public void updateTotalAdView() {
+        this.totalAdView += this.dailyAdView;
+        this.dailyAdView = 0L;
+    }
 }

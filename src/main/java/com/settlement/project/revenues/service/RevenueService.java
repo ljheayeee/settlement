@@ -7,8 +7,10 @@ import com.settlement.project.revenues.entity.Revenue;
 import com.settlement.project.revenues.repository.RevenueRepository;
 import com.settlement.project.video.entity.Video;
 import com.settlement.project.video.repository.VideoRepository;
+import com.settlement.project.video.service.VideoService;
 import com.settlement.project.videoadstats.entity.VideoAdStats;
 import com.settlement.project.videoadstats.repository.VideoAdStatsRepository;
+import com.settlement.project.videoadstats.service.VideoAdStatsService;
 import com.settlement.project.videostats.entity.VideoStats;
 import com.settlement.project.videostats.repository.VideoStatsRepository;
 import org.springframework.stereotype.Service;
@@ -35,15 +37,17 @@ public class RevenueService {
     private final VideoStatsRepository videoStatsRepository;
     private final VideoAdStatsRepository videoAdStatsRepository;
     private final VideoRepository videoRepository;
+    private final VideoAdStatsService videoAdStatsService;
 
     public RevenueService(RevenueRepository revenueRepository,
                           VideoStatsRepository videoStatsRepository,
                           VideoAdStatsRepository videoAdStatsRepository,
-                          VideoRepository videoRepository) {
+                          VideoRepository videoRepository, VideoService videoService, VideoAdStatsService videoAdStatsService) {
         this.revenueRepository = revenueRepository;
         this.videoStatsRepository = videoStatsRepository;
         this.videoAdStatsRepository = videoAdStatsRepository;
         this.videoRepository = videoRepository;
+        this.videoAdStatsService = videoAdStatsService;
     }
 
     @Transactional
@@ -98,6 +102,8 @@ public class RevenueService {
             // 비디오 ID를 Set에 추가하여 중복 방지
             processedVideos.add(videoStats.getVideoId());
         }
+        videoAdStatsService.updateTotalAndResetDailyViews();
+
     }
 
     private long calculateRevenue(long totalViews, long dailyViews, long[] thresholds, long[] rates) {
@@ -136,10 +142,9 @@ public class RevenueService {
             List<VideoAdStats> adStatsList = videoAdStatsRepository.findByVideoId(videoId);
 
             for (VideoAdStats adStats : adStatsList) {
-                long adViews = adStats.getStatsAdView(); // 광고의 조회수를 가져옴
+                long adViews = adStats.getDailyAdView(); // 광고의 조회수를 가져옴
                 long adRevenue = calculateRevenue(adViews, adViews, AD_VIEW_THRESHOLDS, AD_RATES);
                 totalAdRevenue += adRevenue;
-
                 log.info("Video ID: {}, Ad ID: {}, Ad Views: {}, Ad Revenue: {}",
                         videoId, adStats.getAdId(), adViews, adRevenue);
             }

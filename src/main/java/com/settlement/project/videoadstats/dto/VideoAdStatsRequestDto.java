@@ -4,20 +4,21 @@ import com.settlement.project.videoadstats.entity.VideoAdStats;
 import lombok.Builder;
 import lombok.Getter;
 
-
 @Builder
 @Getter
 public class VideoAdStatsRequestDto {
 
     private Long videoId;
     private Long adId;
-    private Long statsAdView;
+    private Long dailyAdView;
+    private Long totalAdView;
 
-    public VideoAdStats toEntity(Long videoId, Long adId, Long statsAdView) {
+    public VideoAdStats toEntity(Long videoId, Long adId) {
         return VideoAdStats.builder()
                 .videoId(videoId)
                 .adId(adId)
-                .statsAdView(statsAdView)
+                .dailyAdView(this.dailyAdView)
+                .totalAdView(this.totalAdView)
                 .build();
     }
 }

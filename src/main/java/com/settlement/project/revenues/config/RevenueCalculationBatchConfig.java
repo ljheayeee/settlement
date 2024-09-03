@@ -18,7 +18,6 @@ import org.springframework.transaction.PlatformTransactionManager;
 import java.time.LocalDate;
 
 @Configuration
-@EnableBatchProcessing
 public class RevenueCalculationBatchConfig {
 
     private static final Logger logger = LoggerFactory.getLogger(RevenueCalculationBatchConfig.class);
