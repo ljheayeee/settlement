@@ -21,12 +21,14 @@
 ![사용자 유형별 기능 플로우](./docs/images/user-type-flow.png)
 ![일일 배치 처리](./docs/images/daily-batch-flow.png)
 
-## 주요 기능
+## 프로젝트 주요 기능 
 - 비디오 업로드시 광고 자동 할당
 - 비디오 조회수 통계 생성
 - 비디오 조회수 및 광고 조회수에 대한 수익 정산
 
-## 배치 작업 성능 개선 내용
+
+## 프로젝트 경험
+### 1. 배치 작업 성능 개선 내용
 
 ### 📊 최종 성능
 
@@ -42,9 +44,12 @@ N건 기준 실측 결과: --
 | 2차 최적화 | N 건 | N분 | --% ↓ |
 | 3차 최적화 | N 건 | N분 | --% ↓ |
 
-### 사전 요구사항
-- Java 21
-- Docker (PostgreSQL 및 Redis 컨테이너 실행용)
+### 2. 트러블 슈팅
+
+## 프로젝트 상세
+
+### API 문서
+- link 집어넣기
 
 ## ERD
-![ERD](./docs/images/settlement-table.jpeg)
+![ERD](./docs/images/settlement-table.png)
