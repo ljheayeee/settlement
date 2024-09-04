@@ -47,4 +47,4 @@ N건 기준 실측 결과: --
 - Docker (PostgreSQL 및 Redis 컨테이너 실행용)
 
 ## ERD
-![ERD](./docs/images/settlement-table.png)
+![ERD](./docs/images/settlement-table.jpeg)
