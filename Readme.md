@@ -58,7 +58,11 @@ N건 기준 실측 결과: --
 ## 프로젝트 상세
 
 ### API 문서
-- link 집어넣기
+
+[Postman API 명세서](https://documenter.getpostman.com/view/37736920/2sAXjQ1VVz)
+
+
+
 
 ## ERD
 ![ERD](./docs/images/settlement-table.png)
