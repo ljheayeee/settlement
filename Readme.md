@@ -1,5 +1,10 @@
 # 정산시스템 프로젝트
 
+## 프로젝트 소개
+동영상 플랫폼의 수익 정산을 위한 배치 처리 시스템
+
+비디오 조회수 통계를 생성하고, 이를 기반으로 광고 수익을 계산하여 정산 데이터를 자동으로 생성하는 Batch 작업 프로젝트
+
 ## 기술 스택
 
 ![Java](https://img.shields.io/badge/Java-21-007396?style=for-the-badge&logo=java)
@@ -9,11 +14,6 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?style=for-the-badge&logo=postgresql)
 ![Redis](https://img.shields.io/badge/Redis-6-D82C20?style=for-the-badge&logo=redis)
 ![Docker Compose](https://img.shields.io/badge/Docker_Compose-3.8-2496ED?style=for-the-badge&logo=docker)
-
-## 프로젝트 소개
-동영상 플랫폼의 수익 정산을 위한 배치 처리 시스템
-
-비디오 조회수 통계를 생성하고, 이를 기반으로 광고 수익을 계산하여 정산 데이터를 자동으로 생성하는 Batch 작업 프로젝트
 
 
 ## 프로세스 플로우
@@ -37,7 +37,7 @@
 4. 비디오 조회수 및 광고 조회수에 대한 수익 정산
 
 ## 프로젝트 경험
-### 1. 배치 작업 성능 개선 내용
+### 1. 배치 작업 성능 개선 내용( 추후 작성 예정)
 
 ### 📊 최종 성능
 
