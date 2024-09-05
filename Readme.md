@@ -22,10 +22,19 @@
 ![일일 배치 처리](./docs/images/daily-batch-flow.png)
 
 ## 프로젝트 주요 기능 
-- 비디오 업로드시 광고 자동 할당
-- 비디오 조회수 통계 생성
-- 비디오 조회수 및 광고 조회수에 대한 수익 정산
+1. 판매자 회원가입 & 카카오 로그인
+   <table>
+     <tr>
+       <td><img src="https://github.com/user-attachments/assets/4a388fb5-7830-4c26-99a0-6ac7ce1c3624" width="400"/></td>
+       <td><img src="https://github.com/user-attachments/assets/bf6a5c8f-18d1-40d5-84a5-e639af833873" width="400"/></td>
+     </tr>
+   </table>
 
+2. 비디오 업로드시 광고 자동 할당
+
+3. 비디오 조회수 통계 생성
+  
+4. 비디오 조회수 및 광고 조회수에 대한 수익 정산
 
 ## 프로젝트 경험
 ### 1. 배치 작업 성능 개선 내용
