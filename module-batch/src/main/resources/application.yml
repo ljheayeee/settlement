@@ -1,0 +1,9 @@
+server:
+  port: 8081
+spring:
+  batch:
+    job:
+      enabled: false
+
+    jdbc:
+      initialize-schema: always

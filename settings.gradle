@@ -5,3 +5,5 @@ pluginManagement {
 	}
 }
 rootProject.name = 'settlement'
+
+include 'module-common', 'module-main', 'module-batch'
