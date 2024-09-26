@@ -59,9 +59,6 @@ public class UserService {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + userId));
     }
-
-
-
-    // 비디오 소유권 확인 메서드
+    
 
 }

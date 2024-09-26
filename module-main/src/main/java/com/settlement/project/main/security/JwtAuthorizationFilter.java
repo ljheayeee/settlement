@@ -30,61 +30,6 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
         this.userDetailsService = userDetailsService;
     }
 
-//    @Override
-//    protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res, FilterChain filterChain) throws ServletException, IOException {
-//        // JWT 토큰을 헤더에서 가져옴
-//        String tokenValue = jwtUtil.getJwtFromHeader(req);
-//        log.info("Received token from header: {}", tokenValue);
-//
-//
-//        if (tokenValue == null) {
-//            // 헤더에 토큰이 없으면 쿠키에서 확인
-//            Cookie[] cookies = req.getCookies();
-//            if (cookies != null) {
-//                for (Cookie cookie : cookies) {
-//                    if (JwtUtil.AUTHORIZATION_HEADER.equals(cookie.getName())) {
-//                        tokenValue = cookie.getValue();
-//                        break;
-//                    }
-//                }
-//            }
-//        }
-//        if (StringUtils.hasText(tokenValue)) {
-//            // 토큰 유효성 검증
-//            log.info("Token detected, validating...");
-//            if (tokenValue.startsWith("Bearer ")) {
-//                tokenValue = tokenValue.substring(7);
-//            }
-//            if (!jwtUtil.validateToken(tokenValue)) {
-//                log.error("Token validation failed");
-//                return;
-//            }
-//            log.info("Token is valid");
-//
-//            // 토큰에서 사용자 정보 추출
-//            Claims info = jwtUtil.getUserInfoFromToken(tokenValue);
-//            log.info("Claims extracted from token: {}", info);
-//
-//            try {
-//                // 인증 설정
-//                log.info("Setting authentication for user: {}", info.getSubject());
-//                setAuthentication(info.getSubject());
-//                log.info("Authentication set in SecurityContextHolder: {}", SecurityContextHolder.getContext().getAuthentication());
-//            } catch (Exception e) {
-//                log.error("Failed to set authentication: " + e.getMessage());
-//                return;
-//            }
-//        } else {
-//            log.warn("No token found in request");
-//        }
-//
-//        // 필터 체인에 따라 다음 필터로 이동하기 전 SecurityContextHolder 상태 확인
-//        log.info("Before filter chain continuation, SecurityContextHolder: {}", SecurityContextHolder.getContext().getAuthentication());
-//        filterChain.doFilter(req, res);
-//        log.info("After filter chain continuation, SecurityContextHolder: {}", SecurityContextHolder.getContext().getAuthentication());
-//    }
-
-
 
 
     //인증 처리

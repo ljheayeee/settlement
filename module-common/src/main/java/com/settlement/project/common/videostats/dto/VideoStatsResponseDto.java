@@ -1,14 +1,9 @@
 package com.settlement.project.common.videostats.dto;
 
-import com.settlement.project.common.util.DateRange;
-import com.settlement.project.common.video.entity.Video;
 import com.settlement.project.common.video.repository.VideoRepository;
-import com.settlement.project.common.videostats.entity.VideoStats;
 import com.settlement.project.common.videostats.repository.VideoStatsRepository;
 import lombok.Builder;
 import lombok.Getter;
-
-import java.time.LocalDate;
 
 @Getter
 @Builder
@@ -30,19 +25,4 @@ public class VideoStatsResponseDto {
                 .build();
     }
 
-    public VideoStatsResponseDto getVideoStats(Long videoId, String period) {
-        DateRange dateRange = DateRange.of(period, LocalDate.now());
-        VideoStats startStats = videoStatsRepository.findByVideoIdAndCreatedAt(videoId, dateRange.getStart())
-                .orElseThrow(() -> new RuntimeException("Stats not found for video: " + videoId));
-        VideoStats endStats = videoStatsRepository.findByVideoIdAndCreatedAt(videoId, dateRange.getEnd())
-                .orElseThrow(() -> new RuntimeException("Stats not found for video: " + videoId));
-
-        Video video = videoRepository.findById(videoId)
-                .orElseThrow(() -> new RuntimeException("Video not found for id: " + videoId));
-
-        long views = endStats.getTotalViews() - startStats.getTotalViews();
-        long watchTime = views * video.getPlayTime();
-
-        return VideoStatsResponseDto.fromEntity(videoId, views, watchTime, period);
-    }
 }

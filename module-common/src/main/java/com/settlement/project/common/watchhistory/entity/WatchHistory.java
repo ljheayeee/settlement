@@ -1,8 +1,8 @@
 package com.settlement.project.common.watchhistory.entity;
 
-import com.settlement.project.common.video.entity.Video;
 import com.settlement.project.common.base.Timestamped;
 import com.settlement.project.common.user.entity.User;
+import com.settlement.project.common.video.entity.Video;
 import jakarta.persistence.*;
 import lombok.Builder;
 import lombok.Getter;

@@ -19,15 +19,12 @@ public interface VideoAdStatsRepository extends JpaRepository<VideoAdStats, Long
 
     List<VideoAdStats> findByCreatedAtBetween(LocalDateTime start, LocalDateTime end);
 
-    Optional<VideoAdStats> findFirstByVideoIdAndAdId(Long videoId, Long adId);
     @Query("SELECT v FROM VideoAdStats v WHERE v.videoId = :videoId AND DATE(v.createdAt) = :date")
     List<VideoAdStats> findByVideoIdAndDate(@Param("videoId") Long videoId, @Param("date") LocalDate date);
 
     @Query("SELECT v FROM VideoAdStats v WHERE v.id = :id AND DATE(v.createdAt) = :date")
     Optional<VideoAdStats> findByIdAndDate(@Param("id") Long id, @Param("date") LocalDate date);
 
-    @Query("SELECT v.id as id, v.title as title FROM Video v WHERE v.id IN :videoIds")
-    List<VideoTitleProjection> findTitlesByVideoIds(@Param("videoIds") Set<Long> videoIds);
 
     interface VideoTitleProjection {
         Long getId();

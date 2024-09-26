@@ -2,20 +2,17 @@ package com.settlement.project.main.videoadstats.service;
 
 import com.settlement.project.common.ads.entity.Ad;
 import com.settlement.project.common.ads.repository.AdRepository;
-import com.settlement.project.main.video.exception.AdPlaybackException;
-import com.settlement.project.main.videoadstats.dto.VideoAdStatsRequestDto;
-import com.settlement.project.main.videoadstats.dto.PlayAdResponseDto;
-import com.settlement.project.main.videoadstats.dto.VideoAdStatsResponseDto;
 import com.settlement.project.common.videoadstats.entity.VideoAdStats;
 import com.settlement.project.common.videoadstats.repository.VideoAdStatsRepository;
+import com.settlement.project.main.video.exception.AdPlaybackException;
+import com.settlement.project.main.videoadstats.dto.PlayAdResponseDto;
+import com.settlement.project.main.videoadstats.dto.VideoAdStatsRequestDto;
+import com.settlement.project.main.videoadstats.dto.VideoAdStatsResponseDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -77,24 +74,6 @@ public class VideoAdStatsService {
         return VideoAdStatsResponseDto.fromEntity(savedVideoAdStats);
     }
 
-    public List<VideoAdStats> findDailyStats(LocalDateTime startOfDay, LocalDateTime endOfDay) {
-        return videoAdStatsRepository.findByCreatedAtBetween(startOfDay, endOfDay);
-    }
-
-    public List<VideoAdStats> getVideoAdStats(Long videoId) {
-        return videoAdStatsRepository.findByVideoId(videoId);
-    }
-
-    public List<VideoAdStats> getVideoAdStatsForDate(Long videoId, LocalDate date) {
-        return videoAdStatsRepository.findByVideoIdAndDate(videoId, date);
-    }
-
-    public long getPreviousDayAdViews(Long videoAdStatsId) {
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        return videoAdStatsRepository.findByIdAndDate(videoAdStatsId, yesterday)
-                .map(VideoAdStats::getDailyAdView)
-                .orElse(0L);
-    }
 
     public Ad getAdById(Long adId) {
         return adRepository.getAdById(adId);
@@ -121,30 +100,4 @@ public class VideoAdStatsService {
         return null;
     }
 
-    public List<VideoAdStats> getVideoAdStatsForDateRange(Long videoId, LocalDate startDate, LocalDate endDate) {
-        return videoAdStatsRepository.findByVideoIdAndCreatedAtBetween(
-                videoId,
-                startDate.atStartOfDay(),
-                endDate.atTime(23, 59, 59)
-        );
-    }
-
-    @Transactional
-    public void updateTotalAndResetDailyViews() {
-        List<VideoAdStats> allStats = videoAdStatsRepository.findAll();
-        for (VideoAdStats stat : allStats) {
-            stat.updateTotalAndResetDaily();
-            videoAdStatsRepository.save(stat);
-        }
-    }
-
-    @Transactional
-    public void updateTotalAdView(Long videoId, Long adId) {
-        Optional<VideoAdStats> optionalAdStats = videoAdStatsRepository.findByVideoIdAndAdId(videoId, adId);
-        if (optionalAdStats.isPresent()) {
-            VideoAdStats adStats = optionalAdStats.get();
-            adStats.updateTotalAdView();
-            videoAdStatsRepository.save(adStats);
-        }
-    }
 }

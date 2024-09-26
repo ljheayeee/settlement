@@ -1,14 +1,14 @@
 package com.settlement.project.main.video.service;
 
-import com.settlement.project.main.ads.service.AdService;
 import com.settlement.project.common.user.entity.User;
-import com.settlement.project.main.user.service.UserService;
-import com.settlement.project.main.video.exception.VideoCreationException;
 import com.settlement.project.common.video.dto.VideoRequestDto;
 import com.settlement.project.common.video.dto.VideoResponseDto;
 import com.settlement.project.common.video.entity.Video;
 import com.settlement.project.common.video.entity.VideoStatusEnum;
 import com.settlement.project.common.video.repository.VideoRepository;
+import com.settlement.project.main.ads.service.AdService;
+import com.settlement.project.main.user.service.UserService;
+import com.settlement.project.main.video.exception.VideoCreationException;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +29,6 @@ public class VideoService {
     private final VideoRepository videoRepository;
     private final UserService userService;
     private final AdService adService;
-    private static final int AD_INTERVAL_SECONDS = 300; // 5분
     private static final int BATCH_SIZE = 1000; // 한 번에 처리할 비디오 ID 수
 
 
@@ -158,22 +157,6 @@ public class VideoService {
     public List<Long> findVideoIdsPaginated(int offset, int limit) {
         return videoRepository.findVideoIdsPaginated(offset, limit);
     }
-
-    @Transactional(readOnly = true)
-    public long countAllVideos() {
-        return videoRepository.countAllVideos();
-    }
-
-    @Transactional
-    public Video save(Video video) {
-        return videoRepository.save(video);
-    }
-
-    @Transactional
-    public void delete(Video video) {
-        videoRepository.delete(video);
-    }
-
 
 
     public Map<Long, String> getVideoTitles(Set<Long> videoIds) {

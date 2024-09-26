@@ -2,12 +2,10 @@ package com.settlement.project.common.videostats.repository;
 
 import com.settlement.project.common.videostats.entity.VideoStats;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,8 +14,6 @@ public interface VideoStatsRepository extends JpaRepository<VideoStats, Long> {
     @Query("SELECT vs FROM VideoStats vs WHERE vs.videoId = :videoId AND DATE(vs.createdAt) = :date")
     Optional<VideoStats> findByVideoIdAndCreatedAt(@Param("videoId") Long videoId, @Param("date") LocalDate date);
 
-    @Query("SELECT DISTINCT v.id FROM Video v WHERE v.status = 'ACTIVATE'")
-    List<Long> findAllActiveVideoIds();
 
     @Query(value = "SELECT vs.* FROM video_stats vs " +
             "JOIN videos v ON vs.video_id = v.video_id " +
@@ -57,17 +53,7 @@ public interface VideoStatsRepository extends JpaRepository<VideoStats, Long> {
     @Query("SELECT vs FROM VideoStats vs WHERE vs.videoId = :videoId AND DATE(vs.createdAt) = :date ORDER BY vs.createdAt DESC LIMIT 1")
     Optional<VideoStats> findLatestStatsByVideoIdAndDate(@Param("videoId") Long videoId, @Param("date") LocalDate date);
 
-    @Query("SELECT DISTINCT vs.videoId FROM VideoStats vs JOIN Video v ON vs.videoId = v.id WHERE DATE(vs.createdAt) = :date AND v.status = 'ACTIVATE'")
-    List<Long> findActiveVideoIdsByDate(@Param("date") LocalDate date);
-
-    @Query("SELECT vs FROM VideoStats vs JOIN Video v ON vs.videoId = v.id " +
-            "WHERE DATE(vs.createdAt) = :date AND v.status = 'ACTIVATE'")
-    List<VideoStats> findByCreatedDateForActiveVideos(@Param("date") LocalDate date);
 
     @Query("SELECT vs FROM VideoStats vs WHERE DATE(vs.createdAt) = :date")
     List<VideoStats> findByCreatedDate(@Param("date") LocalDate date);
-
-    @Modifying
-    @Query("UPDATE VideoStats v SET v.createdAt = :createdAt, v.modifiedAt = :modifiedAt WHERE v.id = :id")
-    void updateCreatedAtAndModifiedAt(@Param("id") Long id, @Param("createdAt") LocalDateTime createdAt, @Param("modifiedAt") LocalDateTime modifiedAt);
 }

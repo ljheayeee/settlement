@@ -4,8 +4,8 @@ import com.settlement.project.common.ads.dto.AdRequestDto;
 import com.settlement.project.common.ads.dto.AdResponseDto;
 import com.settlement.project.common.ads.entity.Ad;
 import com.settlement.project.common.ads.repository.AdRepository;
-import com.settlement.project.main.videoadstats.service.VideoAdStatsService;
 import com.settlement.project.common.util.BatchProcessor;
+import com.settlement.project.main.videoadstats.service.VideoAdStatsService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
@@ -16,7 +16,6 @@ import org.springframework.retry.annotation.Backoff;
 import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -114,19 +113,6 @@ public class AdService {
         BatchProcessor.saveBatch(selectedAds, adRepository::saveAll);
         return selectedAds;
     }
-
-
-
-
-
-
-//    @Transactional
-//    public void resetUsedAds() {
-//        int resetCount;
-//        do {
-//            resetCount = adRepository.resetUsedAdsInBatch(BatchProcessor.BATCH_SIZE);
-//        } while (resetCount > 0);
-//    }
 
     @Transactional
     public void resetUsedAds() {

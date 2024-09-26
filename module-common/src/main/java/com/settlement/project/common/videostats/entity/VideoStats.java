@@ -60,20 +60,4 @@ public class VideoStats extends Timestamped {
         this.dailyViews = this.totalViews - previousTotalViews;
         this.dailyWatchTime = this.totalWatchTime - previousTotalWatchTime;
     }
-
-
-
-//    /**
-//     * 일일 조회수 계산
-//     */
-//    public long getDailyViews(VideoStats previousDayStats) {
-//        return this.totalViews - (previousDayStats != null ? previousDayStats.getTotalViews() : 0);
-//    }
-//
-//    /**
-//     * 일일 재생시간 계산
-//     */
-//    public long getDailyWatchTime(VideoStats previousDayStats) {
-//        return this.totalWatchTime - (previousDayStats != null ? previousDayStats.getTotalWatchTime() : 0);
-//    }
 }
