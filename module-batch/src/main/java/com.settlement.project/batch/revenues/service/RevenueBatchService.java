@@ -1,8 +1,6 @@
 package com.settlement.project.batch.revenues.service;
 
 
-import com.settlement.project.batch.videoadstats.VideoAdStatsBatchService;
-import com.settlement.project.common.revenues.dto.RevenueCalculationRequestDto;
 import com.settlement.project.common.revenues.entity.Revenue;
 import com.settlement.project.common.revenues.repository.RevenueRepository;
 import com.settlement.project.common.video.entity.Video;
@@ -11,14 +9,12 @@ import com.settlement.project.common.videoadstats.entity.VideoAdStats;
 import com.settlement.project.common.videoadstats.repository.VideoAdStatsRepository;
 import com.settlement.project.common.videostats.entity.VideoStats;
 import com.settlement.project.common.videostats.repository.VideoStatsRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 @Service
 @Slf4j
@@ -33,76 +29,62 @@ public class RevenueBatchService {
     private final VideoStatsRepository videoStatsRepository;
     private final VideoAdStatsRepository videoAdStatsRepository;
     private final VideoRepository videoRepository;
-    private final VideoAdStatsBatchService videoAdStatsBatchService;
+
 
     public RevenueBatchService(RevenueRepository revenueRepository,
                                VideoStatsRepository videoStatsRepository,
                                VideoAdStatsRepository videoAdStatsRepository,
-                               VideoRepository videoRepository, VideoAdStatsBatchService videoAdStatsBatchService) {
+                               VideoRepository videoRepository) {
         this.revenueRepository = revenueRepository;
         this.videoStatsRepository = videoStatsRepository;
         this.videoAdStatsRepository = videoAdStatsRepository;
         this.videoRepository = videoRepository;
-        this.videoAdStatsBatchService = videoAdStatsBatchService;
+    }
+
+    // 청크 기반 처리 로직 추가
+    @Transactional(readOnly = true)
+    public List<VideoStats> getVideoStatsForDate(LocalDate calculationDate) {
+        // 해당 날짜의 모든 비디오 통계를 가져옴
+        return videoStatsRepository.findByCreatedDate(calculationDate);
     }
 
     @Transactional
-    public void calculateDailyRevenue(RevenueCalculationRequestDto requestDto) {
-        LocalDate calculationDate = requestDto.getCalculationDate();
+    public Revenue calculateRevenue(VideoStats videoStats) {
+        Video video = videoRepository.findById(videoStats.getVideoId())
+                .orElseThrow(() -> new RuntimeException("Video not found"));
 
-        // 해당 날짜에 대한 수익이 이미 계산되었는지 확인
-        List<Revenue> existingRevenues = revenueRepository.findByCreatedAtBetween(
-                calculationDate.atStartOfDay(), calculationDate.plusDays(1).atStartOfDay());
+        long dailyViews = videoStats.getDailyViews();
+        long totalViews = videoStats.getTotalViews();
 
-        if (!existingRevenues.isEmpty()) {
-            log.info("Revenue already calculated for date: {}", calculationDate);
-            return;  // 이미 계산된 경우 작업을 중단
-        }
+        // 동영상 정산 금액 계산
+        long videoRevenue = calculateRevenueAmount(totalViews, dailyViews, VIDEO_VIEW_THRESHOLDS, VIDEO_RATES);
 
-        // 모든 비디오 가져오기
-        List<VideoStats> videoStatsList = videoStatsRepository.findByCreatedDate(calculationDate);
+        // 광고 정산 금액 계산
+        long adRevenue = calculateTotalAdRevenue(videoStats.getVideoId(), video.getPlayTime());
 
-        // 중복 체크를 위한 Set 사용
-        Set<Long> processedVideos = new HashSet<>();
+        // 전체 정산 금액 계산
+        long totalRevenue = videoRevenue + adRevenue;
 
-        for (VideoStats videoStats : videoStatsList) {
-            // 이미 처리된 비디오는 스킵
-            if (processedVideos.contains(videoStats.getVideoId())) {
-                continue;
-            }
+        log.info("Video ID: {}, Daily Views: {}, Total Views: {}, Video Revenue: {}, Ad Revenue: {}",
+                videoStats.getVideoId(), dailyViews, totalViews, videoRevenue, adRevenue);
 
-            Video video = videoRepository.findById(videoStats.getVideoId())
-                    .orElseThrow(() -> new RuntimeException("Video not found"));
-
-            long dailyViews = videoStats.getDailyViews();
-            long totalViews = videoStats.getTotalViews();
-
-            long videoRevenue = calculateRevenue(totalViews, dailyViews, VIDEO_VIEW_THRESHOLDS, VIDEO_RATES);
-            long adRevenue = calculateTotalAdRevenue(videoStats.getVideoId(), video.getPlayTime());
-
-            long totalRevenue = videoRevenue + adRevenue;
-
-            log.info("Video ID: {}, Daily Views: {}, Total Views: {}, Video Revenue: {}, Ad Revenue: {}",
-                    videoStats.getVideoId(), dailyViews, totalViews, videoRevenue, adRevenue);
-
-            Revenue revenue = Revenue.builder()
-                    .userId(videoStats.getUserId())
-                    .videoId(videoStats.getVideoId())
-                    .revenueVideo(videoRevenue)
-                    .revenueAd(adRevenue)
-                    .revenueTotal(totalRevenue)
-                    .build();
-
-            revenueRepository.save(revenue);
-
-            // 비디오 ID를 Set에 추가하여 중복 방지
-            processedVideos.add(videoStats.getVideoId());
-        }
-        videoAdStatsBatchService.updateTotalAndResetDailyViews();
-
+        // 정산 결과를 Revenue 엔티티로 변환하여 반환
+        return Revenue.builder()
+                .userId(videoStats.getUserId())
+                .videoId(videoStats.getVideoId())
+                .revenueVideo(videoRevenue)
+                .revenueAd(adRevenue)
+                .revenueTotal(totalRevenue)
+                .build();
     }
 
-    private long calculateRevenue(long totalViews, long dailyViews, long[] thresholds, long[] rates) {
+    @Transactional
+    public void saveRevenues(List<? extends Revenue> revenues) {
+        revenueRepository.saveAll(revenues);
+        log.info("Saved {} revenue records", revenues.size());
+    }
+
+    private long calculateRevenueAmount(long totalViews, long dailyViews, long[] thresholds, long[] rates) {
         long revenue = 0;
         long previousViews = totalViews - dailyViews;
         long remainingViews = dailyViews;
@@ -127,25 +109,35 @@ public class RevenueBatchService {
             revenue += remainingViews * rates[rates.length - 1];
         }
 
-        return revenue / 100; // 1원 단위로 변환 및 절사
+        return revenue / 100;  // 1원 단위로 절사
     }
 
     private long calculateTotalAdRevenue(Long videoId, int playTime) {
+        log.info("Calculating ad revenue for Video ID: {}, Play Time: {}", videoId, playTime);
         long totalAdRevenue = 0;
 
-        if (playTime >= 300) {  // 5분(300초) 이상 영상에 대해서만 광고 수익 계산
-            // 날짜에 관계없이 비디오 ID에 해당하는 모든 광고 데이터를 가져옵니다.
-            List<VideoAdStats> adStatsList = videoAdStatsRepository.findByVideoId(videoId);
+        if (playTime >= 300) {
+            try {
+                List<VideoAdStats> adStatsList = videoAdStatsRepository.findByVideoId(videoId);
+                log.info("Video ID: {}, Number of Ad Stats: {}", videoId, adStatsList.size());
 
-            for (VideoAdStats adStats : adStatsList) {
-                long adViews = adStats.getDailyAdView(); // 광고의 조회수를 가져옴
-                long adRevenue = calculateRevenue(adViews, adViews, AD_VIEW_THRESHOLDS, AD_RATES);
-                totalAdRevenue += adRevenue;
-                log.info("Video ID: {}, Ad ID: {}, Ad Views: {}, Ad Revenue: {}",
-                        videoId, adStats.getAdId(), adViews, adRevenue);
+                for (VideoAdStats adStats : adStatsList) {
+                    long adViews = adStats.getDailyAdView();
+                    log.info("Ad ID: {}, Daily Ad Views: {}", adStats.getAdId(), adViews);
+
+                    long adRevenue = calculateRevenueAmount(adViews, adViews, AD_VIEW_THRESHOLDS, AD_RATES);
+                    totalAdRevenue += adRevenue;
+                    log.info("Video ID: {}, Ad ID: {}, Ad Views: {}, Ad Revenue: {}",
+                            videoId, adStats.getAdId(), adViews, adRevenue);
+                }
+            } catch (Exception e) {
+                log.error("Error calculating ad revenue for Video ID: {}", videoId, e);
             }
+        } else {
+            log.info("Video ID: {} is not eligible for ad revenue (Play Time < 300 seconds)", videoId);
         }
 
+        log.info("Total Ad Revenue for Video ID: {}: {}", videoId, totalAdRevenue);
         return totalAdRevenue;
     }
 }

@@ -17,12 +17,6 @@ import java.util.Optional;
 @Repository
 public interface RevenueRepository extends JpaRepository<Revenue, Long> {
 
-    List<Revenue> findByModifiedAtBetween(LocalDateTime start, LocalDateTime end);
-
-    List<Revenue> findByUserId(Long userId);
-
-    List<Revenue> findByVideoId(Long videoId);
-
     @Query("SELECT r FROM Revenue r WHERE r.modifiedAt BETWEEN :start AND :end " +
             "GROUP BY r.videoId ORDER BY SUM(r.revenueTotal) DESC")
     List<Revenue> findTopRevenueVideos(@Param("start") LocalDateTime start,
@@ -50,7 +44,6 @@ public interface RevenueRepository extends JpaRepository<Revenue, Long> {
 
     List<Revenue> findByUserIdAndCreatedAtBetween(Long userId, LocalDateTime startDateTime, LocalDateTime endDateTime);
 
-    Optional<Revenue> findFirstByVideoIdAndCreatedAtBeforeOrderByCreatedAtDesc(Long videoId, LocalDateTime dateTime);
 
     List<Revenue> findByCreatedAtBetween(LocalDateTime startDateTime, LocalDateTime endDateTime);
 }

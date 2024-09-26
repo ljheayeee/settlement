@@ -1,20 +1,16 @@
 package com.settlement.project.batch.videostats.service;
 
 
-import com.settlement.project.common.util.DateRange;
 import com.settlement.project.common.video.entity.Video;
 import com.settlement.project.common.video.repository.VideoRepository;
-import com.settlement.project.common.videostats.dto.VideoStatsResponseDto;
 import com.settlement.project.common.videostats.entity.VideoStats;
 import com.settlement.project.common.videostats.repository.VideoStatsRepository;
-import com.settlement.project.common.watchhistory.repository.WatchHistoryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @Slf4j
@@ -22,92 +18,58 @@ import java.util.Optional;
 public class VideoStatsBatchService {
 
     private final VideoStatsRepository videoStatsRepository;
-    private final WatchHistoryRepository watchHistoryRepository;
     private final VideoRepository videoRepository;
 
-    public VideoStatsBatchService(VideoStatsRepository videoStatsRepository,
-                             WatchHistoryRepository watchHistoryRepository, VideoRepository videoRepository) {
+    public VideoStatsBatchService(VideoStatsRepository videoStatsRepository, VideoRepository videoRepository) {
         this.videoStatsRepository = videoStatsRepository;
-        this.watchHistoryRepository = watchHistoryRepository;
         this.videoRepository = videoRepository;
     }
 
-    @Transactional
-    public void updateDailyStats(LocalDate date) {
-        List<Long> activeVideoIds = videoRepository.findAllActiveVideoIds();
-        LocalDate previousDate = date.minusDays(1);
-
-        for (Long videoId : activeVideoIds) {
-            Video video = videoRepository.findById(videoId)
-                    .orElseThrow(() -> new RuntimeException("Video not found for id: " + videoId));
-            long totalViews = video.getView();
-            long totalWatchTime = totalViews * video.getPlayTime();
-
-            Optional<VideoStats> previousStats = videoStatsRepository.findLatestStatsByVideoIdAndDate(videoId, previousDate);
-            VideoStats currentStats = videoStatsRepository.findLatestStatsByVideoIdAndDate(videoId, date)
-                    .orElseGet(() -> VideoStats.builder()
-                            .videoId(videoId)
-                            .userId(video.getUser().getId())
-                            .totalViews(0)
-                            .totalWatchTime(0)
-                            .dailyViews(0)
-                            .dailyWatchTime(0)
-                            .build());
-
-            currentStats.updateStats(totalViews, totalWatchTime, previousStats.orElse(null));
-            videoStatsRepository.save(currentStats);
-
-            log.info("Updated daily stats for video {}: views={}, dailyWatchTime={}",
-                    videoId, currentStats.getDailyViews(), currentStats.getDailyWatchTime());
-        }
-    }
-
-
-
-    public VideoStatsResponseDto getVideoStats(Long videoId, String period) {
-        DateRange dateRange = DateRange.of(period, LocalDate.now());  // 종료일이 현재 날짜로 제한된 DateRange
-        VideoStats startStats = videoStatsRepository.findByVideoIdAndCreatedAt(videoId, dateRange.getStart())
-                .orElseThrow(() -> new RuntimeException("Stats not found for video: " + videoId));
-        VideoStats endStats = videoStatsRepository.findByVideoIdAndCreatedAt(videoId, dateRange.getEnd())
-                .orElseThrow(() -> new RuntimeException("Stats not found for video: " + videoId));
-
-        long views = endStats.getTotalViews() - startStats.getTotalViews();
-        long watchTime = endStats.getTotalWatchTime() - startStats.getTotalWatchTime();
-
-        return VideoStatsResponseDto.fromEntity(videoId, views, watchTime, period);
+    ///-----
+    @Transactional(readOnly = true)
+    public List<Long> getActiveVideoIds() {
+        return videoRepository.findAllActiveVideoIds();
     }
 
     @Transactional
-    public void createInitialVideoStats(Long videoId, Long userId) {
-        VideoStats initialStats = VideoStats.builder()
-                .videoId(videoId)
-                .userId(userId)
-                .totalViews(0L)
-                .totalWatchTime(0L)
-                .dailyViews(0L)
-                .dailyWatchTime(0L)
-                .build();
-        videoStatsRepository.save(initialStats);
-        log.debug("Initial VideoStats created for video: {}", videoId);
-    }
+    public VideoStats processVideoStats(Long videoId, LocalDate date) {
+        Video video = videoRepository.findById(videoId)
+                .orElseThrow(() -> new RuntimeException("Video not found for id: " + videoId));
 
-    private long calculateViewsForPeriod(VideoStats endStats, DateRange dateRange) {
-        VideoStats startStats = videoStatsRepository.findByVideoIdAndCreatedAt(endStats.getVideoId(), dateRange.getStart())
-                .orElse(VideoStats.builder()
-                        .videoId(endStats.getVideoId())
-                        .userId(endStats.getUserId())
+        long totalViews = video.getView();
+        long totalWatchTime = totalViews * video.getPlayTime();
+
+        // LocalDate previousDate = date.minusDays(1);
+        // VideoStats previousStats = videoStatsRepository.findLatestStatsByVideoIdAndDate(videoId, previousDate)
+        //         .orElse(null);
+
+        // 전날 통계를 가져옴 (date는 이미 전날 날짜임)
+        VideoStats previousStats = videoStatsRepository.findLatestStatsByVideoIdAndDate(videoId, date)
+                .orElse(null);
+
+        VideoStats currentStats = videoStatsRepository.findLatestStatsByVideoIdAndDate(videoId, date)
+                .orElseGet(() -> VideoStats.builder()
+                        .videoId(videoId)
+                        .userId(video.getUser().getId())
                         .totalViews(0L)
                         .totalWatchTime(0L)
                         .dailyViews(0L)
                         .dailyWatchTime(0L)
                         .build());
-        return endStats.getTotalViews() - startStats.getTotalViews();
+
+        currentStats.updateStats(totalViews, totalWatchTime, previousStats);
+
+        log.info("Processed stats for video {} on date {}: dailyViews={}, dailyWatchTime={}",
+                videoId, date, currentStats.getDailyViews(), currentStats.getDailyWatchTime());
+
+        return currentStats;
     }
 
-    private long calculateWatchTimeForPeriod(VideoStats endStats, Video video, DateRange dateRange) {
-        long viewsInPeriod = calculateViewsForPeriod(endStats, dateRange);  // 위 메서드 재사용
-        return viewsInPeriod * video.getPlayTime();
-    }
 
+    @Transactional
+    public void saveVideoStats(List<? extends VideoStats> statsToSave) {
+        videoStatsRepository.saveAll(statsToSave);
+        log.info("Saved {} video stats", statsToSave.size());
+    }
 
 }

@@ -41,6 +41,9 @@ public class Ad extends Timestamped {
     @Column(name = "status")
     private AdStatusEnum status = AdStatusEnum.ACTIVE;
 
+    @Version
+    private Long version;  // 버전 필드 추가
+
     @Builder
     public Ad(String adUrl, LocalDate startDate, LocalDate endDate, boolean isUsed, int adPlaytime) {
         this.adUrl = adUrl;
@@ -61,9 +64,6 @@ public class Ad extends Timestamped {
         }
     }
 
-    public String getStatusAuthority() {
-        return this.status.getAuthority();
-    }
 
     public void markAsUsed() {
         this.isUsed = true;

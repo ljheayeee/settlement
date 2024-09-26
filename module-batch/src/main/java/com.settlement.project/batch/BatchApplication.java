@@ -13,11 +13,12 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableCaching
 @EnableScheduling
 @EnableJpaAuditing
-@ComponentScan(basePackages = {"com.settlement.project.common", "com.settlement.project.batch"})
+@ComponentScan(basePackages = {"com.settlement.project.batch", "com.settlement.project.common"})
 @EntityScan(basePackages = "com.settlement.project.common")
 @EnableJpaRepositories(basePackages = "com.settlement.project.common")
 public class BatchApplication {
     public static void main(String[] args) {
         SpringApplication.run(BatchApplication.class, args);
     }
+
 }

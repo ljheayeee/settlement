@@ -11,8 +11,12 @@ import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.CannotAcquireLockException;
+import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.retry.annotation.Backoff;
+import org.springframework.retry.annotation.Retryable;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -35,7 +39,13 @@ public class AdService {
         this.adRepository = adRepository;
         this.videoAdStatsService = videoAdStatsService;
     }
+
     @Transactional
+    @Retryable(
+            value = {OptimisticLockingFailureException.class},
+            maxAttempts = 3,  // 최대 3번까지 재시도
+            backoff = @Backoff(delay = 500)  // 500ms의 지연 후 재시도
+    )
     public void assignAdsToVideo(Long videoId, int videoLengthMinutes) {
         if (videoLengthMinutes <= AD_INTERVAL_MINUTES) {
             log.info("Video too short for ads. Video ID: {}, Length: {} minutes", videoId, videoLengthMinutes);
@@ -53,6 +63,9 @@ public class AdService {
         }
     }
 
+
+
+
     @Transactional
     public AdResponseDto createAd(AdRequestDto requestDto) {
         Ad ad = requestDto.toEntity();
@@ -61,6 +74,7 @@ public class AdService {
         return AdResponseDto.fromEntity(savedAd);
     }
     @Transactional
+
     public AdResponseDto updateAd(Long id, AdRequestDto requestDto) {
         Ad ad = adRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Ad not found with id: " + id));
@@ -100,6 +114,9 @@ public class AdService {
         BatchProcessor.saveBatch(selectedAds, adRepository::saveAll);
         return selectedAds;
     }
+
+
+
 
 
 
