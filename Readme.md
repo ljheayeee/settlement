@@ -13,6 +13,7 @@
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.2.2-6DB33F?style=for-the-badge&logo=spring-boot)
 ![Spring Batch](https://img.shields.io/badge/Spring_Batch-5.1.0-6DB33F?style=for-the-badge&logo=spring)
 ![Gradle](https://img.shields.io/badge/Gradle-8.8-02303A?style=for-the-badge&logo=gradle)
+
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15-336791?style=for-the-badge&logo=postgresql)
 ![Redis](https://img.shields.io/badge/Redis-6-D82C20?style=for-the-badge&logo=redis)
 ![Docker Compose](https://img.shields.io/badge/Docker_Compose-3.8-2496ED?style=for-the-badge&logo=docker)
